@@ -1,0 +1,67 @@
+name: Publish to the Ballerina central
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Select environment
+        required: true
+        options:
+          - CENTRAL
+      release_version:
+        type: string
+        description: Enter the release version
+        required: true
+      org:
+        type: string
+        description: Enter the organization name
+        required: true
+
+jobs:
+  publish-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ballerina-platform/setup-ballerina@v1
+        name: Install Ballerina
+        with:
+          version: 2201.7.0
+      - name: Pull EDI Tool
+        run: bal tool pull edi
+      - name: Generate Ballerina Source code
+        run: |
+          current_path="$PWD"
+          versions=("d03a")
+          for version in "${versions[@]}"; do
+            packages=$(find $version -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+            for package in $packages; do
+              echo "Generating package : edifact.$version.$package"
+              bal edi libgen -O ${{ inputs.org }} -n "edifact.$version.$package" -s "$version/$package" -o "target"
+            done
+          done
+          tree target
+      - name: install 2201.6.0
+        run: sudo bal dist pull 2201.6.0
+      - name: pack
+        run: |
+          current_dir="$PWD"
+          packages=$(find target -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          for package in $packages; do
+            echo "Running bal pack on : $package"
+            cd "$current_dir/target/$package"
+            sed -i "s/version = \"[^\"]*\"/version = \"${{ inputs.release_version }}\"/" "Ballerina.toml"
+            bal pack
+          done
+      - name: push
+        env:
+          BALLERINA_CENTRAL_ACCESS_TOKEN: ${{ secrets.BALLERINA_CENTRAL_ACCESS_TOKEN }}
+        run: |
+          current_dir="$PWD"
+          packages=$(find target -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          for package in $packages; do
+            echo "Pushing package $package to Ballerina Central"
+            cd "$current_dir/target/$package"
+            bal push
+          done
+
