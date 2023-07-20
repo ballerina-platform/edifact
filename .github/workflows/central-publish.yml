@@ -41,8 +41,6 @@ jobs:
             done
           done
           tree target
-      - name: install 2201.6.0
-        run: sudo bal dist pull 2201.6.0
       - name: pack
         run: |
           current_dir="$PWD"
