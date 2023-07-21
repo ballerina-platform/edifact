@@ -43,6 +43,7 @@ jobs:
           tree target
       - name: pack
         run: |
+          sudo apt install tree
           current_dir="$PWD"
           packages=$(find target -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
           for package in $packages; do
@@ -50,7 +51,7 @@ jobs:
             cd "$current_dir/target/$package"
             sed -i "s/version = \"[^\"]*\"/version = \"${{ inputs.release_version }}\"/" "Ballerina.toml"
             echo "ls modules"
-            ls modules
+            tree modules
           done
 
 
