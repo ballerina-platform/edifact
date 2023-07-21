@@ -66,6 +66,5 @@ jobs:
             ls
             echo "ls modules"
             ls modules
-#            bal push
           done
 
