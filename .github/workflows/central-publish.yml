@@ -52,6 +52,17 @@ jobs:
             sed -i "s/version = \"[^\"]*\"/version = \"${{ inputs.release_version }}\"/" "Ballerina.toml"
             echo "ls modules"
             tree modules
+            bal pack
           done
-
+      - name: push
+        env:
+          BALLERINA_CENTRAL_ACCESS_TOKEN: ${{ secrets.BALLERINA_CENTRAL_ACCESS_TOKEN }}
+        run: |
+          current_dir="$PWD"
+          packages=$(find target -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          for package in $packages; do
+            echo "Pushing package $package to Ballerina Central"
+            cd "$current_dir/target/$package"
+            bal push
+          done
 
